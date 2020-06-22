@@ -6,7 +6,7 @@ import { MdSend } from 'react-icons/md';
 import Message from './components/Message';
 import api from './services/api';
 
-const io = socket('http://localhost:3333');
+const io = socket('http://192.168.0.112:3333');
 
 function App() {
 	const [messages, setMessages] = useState([]);
@@ -16,6 +16,10 @@ function App() {
 
 	io.on('received-message', data => {
 		setMessages([...messages, data]);
+
+		if (Notification.permission === 'granted') {
+			new Notification(data.message);
+		}
 	});
 
 	useEffect(() => {
@@ -51,9 +55,14 @@ function App() {
 			justify="space-between"
 			alignItems="center"
 		>
-			<Grid item>
+			<Grid item style={{ width: '100%' }}>
 				{messages.map(message => (
-					<Message key={message.key} message={message} />
+					<Message
+						key={message.key}
+						message={message}
+						sent={message.author === 'matheusgouveia'}
+						received={message.author !== 'matheusgouveia'}
+					/>
 				))}
 			</Grid>
 
@@ -61,7 +70,7 @@ function App() {
 				<Grid
 					id="footer"
 					container
-					justify="space-between"
+					justify="flex-end"
 					alignItems="center"
 				>
 					<TextareaAutosize
