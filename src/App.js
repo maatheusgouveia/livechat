@@ -1,26 +1,82 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from 'react';
+import socket from 'socket.io-client';
+import { Grid, TextareaAutosize, IconButton } from '@material-ui/core';
+import { MdSend } from 'react-icons/md';
+
+import Message from './components/Message';
+import api from './services/api';
+
+const io = socket('http://localhost:3333');
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+	const [messages, setMessages] = useState([]);
+	const [content, setContent] = useState('');
+
+	io.emit('connectRoom', 'livechat');
+
+	io.on('received-message', data => {
+		setMessages([...messages, data]);
+	});
+
+	useEffect(() => {
+		async function loadMessages() {
+			const response = await api.get('messages');
+
+			setMessages(response.data);
+		}
+
+		loadMessages();
+	}, []);
+
+	async function handleSubmit(e) {
+		e.preventDefault();
+
+		const newMessage = {
+			message: content,
+			author: 'matheusgouveia',
+		};
+
+		const response = await api.post('messages', newMessage);
+
+		setMessages([...messages, response.data]);
+
+		setContent('');
+	}
+
+	return (
+		<Grid
+			id="app"
+			container
+			direction="column"
+			justify="space-between"
+			alignItems="center"
+		>
+			<Grid item>
+				{messages.map(message => (
+					<Message key={message.key} message={message} />
+				))}
+			</Grid>
+
+			<form onSubmit={handleSubmit}>
+				<Grid
+					id="footer"
+					container
+					justify="space-between"
+					alignItems="center"
+				>
+					<TextareaAutosize
+						required
+						onChange={e => setContent(e.target.value)}
+						value={content}
+					/>
+
+					<IconButton type="submit">
+						<MdSend />
+					</IconButton>
+				</Grid>
+			</form>
+		</Grid>
+	);
 }
 
 export default App;
